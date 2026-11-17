@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#030610">
+<link rel="manifest" href="manifest.json">
+<title>Atlas</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#030610;color:#d7f8ff;font-family:system-ui,sans-serif;overflow:hidden;touch-action:manipulation}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#upd{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:6;display:none;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:#082a3c;border:1px solid #28dcff;color:#e6fcff;font-size:14px}#upd.an{display:flex}#upd span{flex:1}#upd button{padding:8px 12px;border-radius:8px;border:1px solid #28dcff;background:transparent;color:#bfeeff;font-size:14px}#upd #updgo{background:#28dcff;color:#03222c;font-weight:600}
+#zahn{position:fixed;top:calc(env(safe-area-inset-top) + 14px);right:16px;font-size:26px;color:#3a7f9a;text-decoration:none;z-index:5;padding:6px}
+#kopf{position:fixed;top:calc(env(safe-area-inset-top) + 28px);left:0;right:0;text-align:center;pointer-events:none}
+#kopf b{display:block;font-size:34px;letter-spacing:.5em;margin-right:-.5em;font-weight:700}
+#zustand{display:block;margin-top:10px;font-size:13px;letter-spacing:.4em;margin-right:-.4em;color:#28dcff}
+#fuss{position:fixed;z-index:4;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom) + 14px)}
+#chips{display:flex;gap:8px}
+#chips button{flex:1;padding:14px 4px;border-radius:12px;border:1.5px solid #234660;background:transparent;color:#5a8296;font-size:10.5px;letter-spacing:.04em;font-weight:600;white-space:nowrap}
+#chips button.an{border-color:#28dcff;color:#e6fcff;background:#082a3c}
+#werk{margin-top:10px;padding:14px 16px;border-radius:16px;border:1.5px solid #2a8fb4;background:rgba(6,22,36,.85)}
+#werk small{display:block;color:#ffaa3c;font-size:11px;letter-spacing:.2em}
+#werk span{display:block;margin-top:6px;font-size:17px;font-weight:600}
+#chips{display:none}
+#start{position:fixed;left:14px;right:14px;bottom:150px;display:grid;grid-template-columns:1fr 1fr;gap:10px;transition:opacity .3s;z-index:2}
+body.im-gespraech #start{opacity:0;pointer-events:none}
+body.werk-leer #werk{display:none}
+.kachel{min-height:84px!important;padding:10px 12px!important}.kachel.breit{min-height:70px!important}.kachel b{font-size:22px!important;margin-top:4px!important}
+.kachel{border:1.5px solid #2a8fb4;border-radius:16px;background:rgba(6,22,36,.85);padding:12px;min-height:96px;text-align:left;color:#d7f8ff;font-family:inherit;box-shadow:0 0 14px rgba(34,195,234,.13)}
+
+.kachel.liste{cursor:default;min-height:0!important}.kachel.liste small{margin-bottom:2px}
+.ek{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:15px;color:#e6fcff;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ek i{width:20px;height:20px;border-radius:50%;border:1.8px solid #2a8fb4;flex:none;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:13px;color:#030610}
+.ek.ok{color:#5f8a99;text-decoration:line-through}.ek.ok i{background:#4ade80;border-color:#4ade80;text-decoration:none}
+.kachel .ek span{display:inline;margin:0;font-size:15px;color:inherit;line-height:1.2}.ekmehr{font-size:12px;color:#6aa9bd;padding:2px 0}
+.ekmehr{margin-bottom:0}@media(max-height:600px){#start .kachel:not(.liste) span{display:none}#start .kachel b{font-size:19px!important}.ek{padding:1px 0}}
+
+#listebox{display:none;position:fixed;inset:0;z-index:20;background:#030610;flex-direction:column;color:#e6fcff}
+#listebox.auf{display:flex}
+#vbox,#pbox{display:none;position:fixed;inset:0;z-index:20;background:#030610;flex-direction:column;color:#e6fcff}#vbox.auf,#pbox.auf{display:flex}
+#vzu,#pzu{width:44px;height:44px;border-radius:50%;border:1.5px solid #2a8fb4;background:transparent;color:#7fd8f0;font-size:20px}
+#vinh,#pinh{flex:1;overflow-y:auto;padding:6px 20px calc(20px + env(safe-area-inset-bottom))}#vinh h3,#pinh h3{margin:22px 0 6px;font-weight:400;font-size:12px;letter-spacing:.2em;color:#ffaa3c}#vinh p,#pinh p{margin:6px 0;color:#9fc6d4;font-size:15px;line-height:1.4}
+.vtog{width:100%;padding:16px;border-radius:16px;border:1.5px solid #2a8fb4;background:transparent;color:#e6fcff;font:inherit;font-size:20px}.vtog.an{border-color:#7dffb0;color:#7dffb0;background:rgba(125,255,176,.08)}
+.vbtn{width:100%;margin-top:10px;padding:13px;border-radius:14px;border:1.5px solid #ffaa3c;background:transparent;color:#ffaa3c;font:inherit;font-size:16px}
+.vk{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid #0e2a3a;font-size:19px}.vk i{flex:none;width:28px;height:28px;border:2px solid #22c3ea;border-radius:7px;display:grid;place-items:center;font-style:normal;color:transparent}.vk.ok i{background:#22c3ea;color:#001}
+.vl{padding:9px 0;border-bottom:1px solid #0e2a3a;font-size:14px;color:#9fc6d4}.vl b{color:#e6fcff;font-weight:600}.vl em{display:block;font-style:normal;color:#ffaa3c;margin-top:2px}
+#vneu{width:100%;box-sizing:border-box;border:1px dashed #2a8fb4;border-radius:14px;background:transparent;padding:13px 14px;font:inherit;font-size:17px;color:#e6fcff;outline:none;margin-top:10px}
+#erbox{display:none;position:fixed;inset:0;z-index:20;background:#030610;flex-direction:column;color:#e6fcff}#erbox.auf{display:flex}
+#erzu{width:44px;height:44px;border-radius:50%;border:1.5px solid #2a8fb4;background:transparent;color:#7fd8f0;font-size:20px}
+#erliste{flex:1;overflow-y:auto;padding:6px 20px calc(20px + env(safe-area-inset-bottom))}
+.er{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #0e2a3a;font-size:19px}.er .ez{flex:none;color:#ffaa3c;font-size:14px;min-width:84px}.er .et{flex:1;min-width:0;overflow-wrap:anywhere}
+.er button{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px solid #ff6a5a;background:transparent;color:#ff6a5a;font-size:18px}.er.weg{opacity:.3}.erleer{padding:30px 0;color:#6aa9bd;text-align:center}
+#lkopf{display:flex;justify-content:space-between;align-items:center;padding:22px 20px 8px}
+#lkopf small{color:#ffaa3c;letter-spacing:.2em;font-size:12px}#lkopf h1{margin:4px 0 0;font-weight:300;font-size:30px}
+#lzu{width:44px;height:44px;border-radius:50%;border:1.5px solid #2a8fb4;background:transparent;color:#7fd8f0;font-size:20px}
+#lliste{flex:1;overflow-y:auto;padding:6px 20px}
+#lliste .ek{padding:13px 0;font-size:19px;border-bottom:1px solid #0e2a3a;gap:14px}#lliste .ek i{width:28px;height:28px;font-size:17px}#lliste .ek span{font-size:19px!important}
+#lunten{padding:12px 16px calc(20px + env(safe-area-inset-bottom));border-top:1px solid #0e2a3a;background:#030610}
+#lneu{width:100%;box-sizing:border-box;border:1px dashed #2a8fb4;border-radius:14px;background:transparent;padding:13px 14px;font:inherit;font-size:17px;color:#e6fcff;outline:none;margin-bottom:10px}
+#lneu::placeholder{color:#6aa9bd}
+#lraus{width:100%;border:1.5px solid #ffaa3c;color:#ffaa3c;background:transparent;border-radius:14px;padding:12px;font:inherit;font-size:16px}#lraus:disabled{opacity:.35}
+.kachel.liste{cursor:pointer}
+#reihe{grid-column:span 2;display:flex;gap:8px}#reihe .kachel{flex:1;min-width:0;min-height:0!important;padding:8px!important;text-align:center}#reihe .kachel b{font-size:15px!important;margin-top:3px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#reihe .kachel span{display:none!important}#reihe .kachel small{letter-spacing:.1em;font-size:9px}#start.kompakt #reihe .kachel{padding:6px!important}#reihe:not(:has(.kachel:not([style*="display: none"]))){display:none}
+.kachel.breit{grid-column:span 2;min-height:80px}.kachel.weg{display:none!important}#start.kompakt{gap:6px}#start.kompakt .kachel{min-height:0!important;padding:7px 10px!important}#start.kompakt .kachel b{font-size:17px!important;margin-top:2px!important}#start.kompakt .kachel span{font-size:11px!important;margin-top:1px!important;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}#start.kompakt .kachel small{font-size:9px}#start.kompakt #k-einkauf,#start.kompakt #k-mitnehmen,#start.kompakt #k-notizen{grid-column:span 1}.kachel.warn{border-color:#ffaa3c}
+.kachel small{display:block;font-size:10px;letter-spacing:.2em;color:#ffaa3c}
+.kachel b{display:block;font-size:24px;font-weight:300;margin-top:6px;color:#fff;line-height:1.15}
+.kachel span{white-space:pre-line;display:block;font-size:12px;color:#8ccbe0;margin-top:4px;line-height:1.35}
+#eingabe{display:flex;gap:8px;margin-top:10px;position:relative}
+#fotowahl{position:absolute;left:0;bottom:58px;display:flex;flex-direction:column;gap:6px;padding:8px;border:1.5px solid #2a8fb4;border-radius:16px;background:rgba(6,22,36,.97);box-shadow:0 0 18px rgba(34,195,234,.2);z-index:5}
+#fotowahl[hidden]{display:none}
+#eingabe #fotowahl button{width:auto;border-radius:12px;padding:12px 16px;font-size:15px;text-align:left;white-space:nowrap;border:1.5px solid #28dcff;background:#082a3c;color:#e6fcff;font-family:inherit}
+#eingabe input{flex:1;min-width:0;padding:13px 14px;border-radius:999px;border:1.5px solid #2a8fb4;background:rgba(6,22,36,.9);color:#e6fcff;font-size:16px;font-family:inherit}
+#eingabe input::placeholder{color:#5a8296}
+#eingabe button{flex:none;width:48px;border-radius:50%;border:1.5px solid #28dcff;background:#082a3c;color:#e6fcff;font-size:20px;padding:0}
+#werk{max-height:34vh;overflow:auto}
+#briefbox{position:fixed;inset:0;display:none;flex-direction:column;gap:10px;padding:14px;background:rgba(3,6,16,.97);z-index:15}
+#briefbox.offen{display:flex}
+#briefbox h2{margin:0;font-size:12px;letter-spacing:.2em;color:#ffaa3c;font-weight:400}
+#brieftext{flex:1;min-height:0;width:100%;padding:12px;border-radius:14px;border:1.5px solid #2a8fb4;background:#061624;color:#e6fcff;font-size:15px;line-height:1.45;font-family:inherit;resize:none;box-sizing:border-box}
+#briefknoepfe{display:flex;gap:8px}
+#briefknoepfe button{flex:1;padding:13px 6px;border-radius:12px;border:1.5px solid #28dcff;background:#082a3c;color:#e6fcff;font-size:15px;font-family:inherit}
+@media print{body>*:not(#briefbox){display:none!important}#briefbox{position:static;display:block!important;background:#fff;padding:0}#briefbox h2,#briefknoepfe{display:none}#brieftext{border:0;background:#fff;color:#000;font-size:12pt;height:auto;overflow:visible;padding:0;font-family:"Times New Roman",serif}}
+#pwbox{position:fixed;inset:0;background:rgba(3,6,16,.92);display:none;align-items:center;justify-content:center;z-index:20;padding:24px}
+#pwbox form{width:100%;max-width:360px;padding:22px;border-radius:18px;border:1.5px solid #2a8fb4;background:#061624}
+#pwbox p{margin:0 0 12px;font-size:15px}
+#pwbox input{width:100%;padding:14px;border-radius:12px;border:1.5px solid #234660;background:#030610;color:#e6fcff;font-size:16px}
+#pwbox button{margin-top:12px;width:100%;padding:14px;border-radius:12px;border:1.5px solid #28dcff;background:#082a3c;color:#e6fcff;font-size:16px;font-weight:600}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="briefbox"><h2 id="brieftitel">KÜNDIGUNG</h2><textarea id="brieftext" aria-label="Brieftext"></textarea><div id="briefknoepfe"><button type="button" id="b-kopieren">Kopieren</button><button type="button" id="b-pdf">PDF / Drucken</button><button type="button" id="b-zu">Schließen</button></div></div>
+<div id="pwbox"><form id="pwform" method="post" action="#"><p id="pwtext">Passwort für Atlas (das aus der Einrichtung)</p><input type="text" name="username" value="Atlas" autocomplete="username" tabindex="-1" aria-hidden="true" style="position:absolute;opacity:0;height:0;width:0;padding:0;border:0"><input id="pwin" name="password" type="password" autocomplete="current-password" autocorrect="off" autocapitalize="off" spellcheck="false"><button id="pwok" type="submit">Weiter</button></form></div>
+<div id="upd"><span id="updtext"></span><button id="updgo">Laden</button><button id="updnein">Später</button></div>
+<a id="zahn" href="setup.html" aria-label="Einrichtung">&#9881;</a>
+<div id="kopf"><b>ATLAS</b><span id="zustand">BEREIT</span></div>
+<div id="pbox"><div id="lkopf"><div><small>PARKPLATZ</small><h1 id="ptitel">Auto-Bluetooth</h1></div><button type="button" id="pzu" aria-label="Schließen">✕</button></div><div id="pinh"></div></div>
+<div id="vbox"><div id="lkopf"><div><small>WHATSAPP</small><h1 id="vtitel">Aus</h1></div><button type="button" id="vzu" aria-label="Schließen">✕</button></div><div id="vinh"></div></div>
+<div id="erbox"><div id="lkopf"><div><small>ERINNERUNGEN</small><h1 id="erzahl">0 offen</h1></div><button type="button" id="erzu" aria-label="Schließen">✕</button></div><div id="erliste"></div></div>
+<div id="listebox"><div id="lkopf"><div><small id="ltitel">EINKAUFSLISTE</small><h1 id="lzahl">0 offen</h1></div><button type="button" id="lzu" aria-label="Schließen">✕</button></div><div id="lliste"></div><div id="lunten"><input type="text" id="lneu" enterkeyhint="done" maxlength="200" placeholder="+ Artikel hinzufügen" aria-label="Neuer Eintrag"><button type="button" id="lraus">Abgehakte entfernen</button></div></div>
+<div id="start">
+  <button class="kachel breit" id="k-termine" data-frage="Welche Termine habe ich heute?"><small>TERMINE HEUTE</small><b>…</b><span></span></button>
+  <button class="kachel" id="k-wetter" data-frage="Wie wird das Wetter heute?"><small>WETTER</small><b>…</b><span></span></button>
+  <button class="kachel" id="k-tanken" data-frage="Wo tanke ich am günstigsten Diesel?"><small>DIESEL · TANKEN</small><b>…</b><span></span></button>
+  <div class="kachel breit liste" id="k-einkauf"><small>EINKAUFSLISTE</small><div class="eke"></div></div>
+  <div class="kachel breit liste" id="k-mitnehmen" style="display:none"><small>MITNEHMEN</small><div class="eke"></div></div>
+  <button class="kachel breit" id="k-erinn" type="button" style="display:none"><small>ERINNERUNGEN</small><b>…</b><span></span></button>
+  <div id="reihe">
+  <button class="kachel" id="k-hey" type="button" style="display:none"><small>HEY ATLAS</small><b>…</b><span></span></button>
+  <button class="kachel" id="k-park" type="button" style="display:none"><small>PARKPLATZ</small><b>…</b><span></span></button>
+  <button class="kachel" id="k-vertr" type="button" style="display:none"><small>WHATSAPP</small><b>…</b><span></span></button>
+  </div>
+  <button class="kachel breit" id="k-notizen" data-frage="Zeig mir meine Notizen"><small>NOTIZEN</small><b>…</b><span></span></button>
+</div>
+<div id="fuss">
+  <div id="chips"></div>
+  <div id="werk"><small id="werklabel">WERKZEUG</small><span id="werktext">Warte auf dich</span></div>
+  <form id="eingabe" autocomplete="off"><button type="button" id="fotoknopf" aria-label="Foto machen oder wählen"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button><div id="fotowahl" hidden><button type="button" id="fw-kamera">Foto machen</button><button type="button" id="fw-galerie">Aus Galerie, Dateien oder PDF</button></div><input id="fotodatei" type="file" accept="image/*,application/pdf,.pdf" hidden><input id="fotokamera" type="file" accept="image/*" capture="environment" hidden><input id="eintext" type="text" enterkeyhint="send" placeholder="Oder tippe hier, was du willst" aria-label="Nachricht an Atlas"><button type="submit" aria-label="Senden">&#10148;</button></form>
+</div>
+<script>
+(function(){
+"use strict";
+var ZUSTAENDE={
+  bereit:{name:"BEREIT",text:"Warte auf dich",drehen:.25,ring:.25,fluss:0,puls:.03,hell:.55,amber:0,energie:.12,fr:120,fg:235,fb:255},
+  hoert:{name:"HÖRT ZU",text:"Ich höre dir zu …",drehen:.45,ring:.5,fluss:-.2,puls:.10,hell:.8,amber:0,energie:.45,fr:110,fg:255,fb:175},
+  denkt:{name:"DENKT NACH",text:"Ich überlege …",drehen:1.4,ring:1.6,fluss:1,puls:.06,hell:1,amber:.35,energie:.6,fr:255,fg:200,fb:110},
+  arbeitet:{name:"ARBEITET",text:"Kalender wird durchsucht …",drehen:2.2,ring:2.4,fluss:.6,puls:.05,hell:1,amber:1,energie:.7,fr:255,fg:165,fb:70},
+  spricht:{name:"SPRICHT",text:"Ich antworte dir",drehen:.7,ring:.8,fluss:-1,puls:.16,hell:.95,amber:0,energie:1,fr:205,fg:120,fb:255}
+};
+var REIHE=["hoert","denkt","arbeitet","spricht"];
+var cv=document.getElementById("c"),g=cv.getContext("2d"),W,H,cx,cy,R,dpr=1;
+var klein=true,platz={cy:170,R:48};
+function messen(){var f=document.getElementById("fuss"),st=document.getElementById("start");if(!f||!st)return;var fh=f.offsetHeight;st.style.bottom=(fh+calcB()+12)+"px";
+  var ko=document.getElementById("kopf"),oben=(ko.offsetHeight||70)+(parseFloat(getComputedStyle(ko).top)||28)+8;
+  var reihe=["k-notizen","k-mitnehmen","k-einkauf","k-tanken","k-wetter"].map(function(i){return document.getElementById(i)}).filter(Boolean);
+  reihe.forEach(function(k){k.classList.remove("weg")});st.classList.remove("kompakt");
+  var frei=function(){return innerHeight-(fh+calcB()+12)-st.getBoundingClientRect().height-6-oben};
+  if(frei()<210)st.classList.add("kompakt"); // zu wenig Platz fuer die Kugel: Kacheln kompakter, Einkauf und Notizen nebeneinander
+  for(var n=0;n<reihe.length&&frei()<150;n++)reihe[n].classList.add("weg"); // zur Not unwichtigste Kacheln weglassen
+  var h=Math.max(90,frei());platz={cy:oben+h/2,R:Math.max(26,Math.min(innerWidth*.12,h/2/2.05))}}
+function calcB(){return 14}
+function ziele(){return klein?platz:{cy:H*.43,R:Math.min(W*.245,H*.2)}}
+function groesse(){dpr=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);cx=W/2;var z=ziele();cy=z.cy;R=z.R}
+groesse();addEventListener("resize",function(){groesse();messen()});
+try{new ResizeObserver(function(){messen()}).observe(document.getElementById("start"));new ResizeObserver(function(){messen()}).observe(document.getElementById("fuss"))}catch(e){} // Kacheln wachsen, wenn ihre Daten ankommen: die Kugel passt sich jedes Mal an
+var zst="bereit",aktuell=Object.assign({},ZUSTAENDE.bereit),winkel=0,ringW=0,t0=performance.now();
+function setze(n){
+  if(n==="bereit"&&zst!=="bereit"&&window.AtlasApp&&AtlasApp.heyNeu){setTimeout(function(){try{AtlasApp.heyNeu()}catch(e){}},700)}
+  zst=n;if((n==="hoert"||n==="denkt")&&window.AtlasAnim)AtlasAnim.stop();var z=ZUSTAENDE[n];
+  document.getElementById("zustand").textContent=z.name;
+  var b=document.querySelectorAll("#chips button");
+  for(var i=0;i<b.length;i++)b[i].classList.toggle("an",b[i].dataset.z===n);
+}
+var knoten=[];for(var i=0;i<64;i++){var u=Math.random()*6.283,v=Math.acos(2*Math.random()-1);knoten.push([Math.sin(v)*Math.cos(u),Math.cos(v),Math.sin(v)*Math.sin(u)])}
+var teil=[];function neuTeil(p){var a=Math.random()*6.283,r=R*(.55+Math.random()*1.9);p.a=a;p.r=r;p.s=.6+Math.random()*1.8;p.c=Math.random()<.12?1:0;p.l=Math.random();return p}
+for(i=0;i<190;i++)teil.push(neuTeil({}));
+function mix(a,b,k){return a+(b-a)*k}
+function bogen(r,a0,a1,w,col,al){g.globalAlpha=al;g.strokeStyle=col;g.lineWidth=w;g.beginPath();g.arc(cx,cy,r,a0,a1);g.stroke()}
+var ringe=[];(function(){var rnd=function(a,b){return a+Math.random()*(b-a)};
+ [[1.62,3,5,"c"],[1.45,2,10,"c"],[1.25,4,6,"a"],[1.08,1,2,"c"]].forEach(function(d,k){var n=d[1]+3,arr=[];for(var j=0;j<n;j++)arr.push([j*6.283/n+rnd(0,.3),rnd(.4,.9),d[2]]);ringe.push({f:d[0],bogen:arr,farbe:d[3],dir:k%2?-1:1,tempo:1-k*.15})})})();
+var fib=[];(function(){for(var q=0;q<1300;q++){var y=1-2*q/1299,r0=Math.sqrt(1-y*y),th=q*2.399963;fib.push([Math.cos(th)*r0,y,Math.sin(th)*r0,th])}})();
+var last=performance.now();
+function frame(now){
+  var dt=Math.min((now-last)/1000,.05);last=now;var tt=(now-t0)/1000;
+  var z=ZUSTAENDE[zst];for(var k in z){if(typeof z[k]==="number")aktuell[k]=mix(aktuell[k],z[k],Math.min(1,dt*3))}
+  var zz0=ziele();cy=mix(cy,zz0.cy,Math.min(1,dt*5));R=mix(R,zz0.R,Math.min(1,dt*5));
+  winkel+=dt*aktuell.drehen;ringW+=dt*aktuell.ring;
+  g.globalAlpha=1;g.clearRect(0,0,W,H);
+  var hg=g.createRadialGradient(cx,cy,0,cx,cy,R*2.6);hg.addColorStop(0,"rgba("+Math.round(aktuell.fr*.2)+","+Math.round(aktuell.fg*.4)+","+Math.round(aktuell.fb*.5)+","+(.35*aktuell.hell)+")");hg.addColorStop(1,"rgba(3,6,16,0)");g.fillStyle=hg;g.fillRect(0,0,W,H);
+  var puls=1+Math.sin(tt*(zst==="spricht"?9:zst==="hoert"?5:2.2))*aktuell.puls+(zst==="spricht"?Math.sin(tt*13.7)*.05:0);
+  g.globalCompositeOperation="lighter";
+  // Partikel-Kugel: Farbe je Zustand (bereit blau, zuhoeren gruen, denken orange, sprechen violett), Oberflaeche wogt mit der Energie
+  var cr=Math.round(aktuell.fr),cgn=Math.round(aktuell.fg),cb=Math.round(aktuell.fb),en=aktuell.energie,farbe=cr+","+cgn+","+cb,ps=Math.max(.5,R/110);
+  var ca=Math.cos(winkel*.7),sa=Math.sin(winkel*.7),ct=Math.cos(.45),st=Math.sin(.45);
+  for(i=0;i<fib.length;i++){var f=fib[i],y0=f[1],wv=1+(.03+.1*en)*Math.sin(y0*7+tt*3.2*(1+en))*Math.cos(f[3]*2+tt*1.4),x1=f[0]*wv,y1=y0*wv,z1=f[2]*wv;
+    var x2=x1*ca-z1*sa,z2=x1*sa+z1*ca,y2=y1*ct-z2*st;z2=y1*st+z2*ct;var d=(z2+1)/2,hot=Math.max(0,Math.sin(y0*7+tt*3.2*(1+en)))*en,sx=cx+x2*R*.98*puls,sy=cy+y2*R*.98*puls;
+    g.globalAlpha=(hot>.25?.35+.6*d:.15+.85*d)*aktuell.hell;g.fillStyle=hot>.25?"rgb(255,"+Math.round(180+cgn*.1)+",110)":"rgb("+Math.round(cr*.75+60)+","+Math.round(cgn*.75+60)+","+Math.round(cb*.75+60)+")";
+    var rp=(.8+1.9*d)*ps;g.beginPath();g.arc(sx,sy,rp,0,6.283);g.fill()}
+  g.globalAlpha=.45*aktuell.hell;g.lineWidth=1.4;g.strokeStyle="rgb("+farbe+")";
+  for(var oj=0;oj<3;oj++){g.beginPath();g.ellipse(cx,cy,R*(1.35+oj*.18)*puls,R*(.42+oj*.08)*puls,winkel*.35*(oj%2?-1:1)+oj,0,6.283);g.stroke()}
+  // Kern
+  var kr=R*.2*puls,kg=g.createRadialGradient(cx,cy,0,cx,cy,kr*2.4);kg.addColorStop(0,"rgba(255,255,255,"+aktuell.hell+")");kg.addColorStop(.3,"rgba("+Math.round(aktuell.fr)+","+Math.round(aktuell.fg)+","+Math.round(aktuell.fb)+","+(.7*aktuell.hell)+")");kg.addColorStop(1,"rgba("+Math.round(aktuell.fr*.3)+","+Math.round(aktuell.fg*.9)+","+Math.round(aktuell.fb)+",0)");g.globalAlpha=1;g.fillStyle=kg;g.beginPath();g.arc(cx,cy,kr*2.4,0,6.283);g.fill();
+  // Partikel
+  for(i=0;i<teil.length;i++){var p=teil[i];p.r-=aktuell.fluss*p.s*R*dt*.7;p.a+=dt*.1*p.s*(aktuell.drehen+.2);p.l+=dt*.2;
+   if(p.r<R*.25||p.r>R*2.6){neuTeil(p);p.r=aktuell.fluss>0?R*2.5:R*.3}
+   var al=Math.min(1,(p.r-R*.2)/(R*.5))*Math.min(1,(R*2.6-p.r)/(R*.5));g.globalAlpha=Math.max(0,al)*.9;g.fillStyle=p.c?"#ffb040":"rgb("+Math.round(aktuell.fr*.8+50)+","+Math.round(aktuell.fg*.8+50)+","+Math.round(aktuell.fb*.8+50)+")";g.beginPath();g.arc(cx+Math.cos(p.a)*p.r,cy+Math.sin(p.a)*p.r,p.s,0,6.283);g.fill()}
+  // Sprech-Wellen
+  if(zst==="spricht"||zst==="hoert"){for(var w=0;w<3;w++){var ph=((tt*(zst==="spricht"?.8:.5))+w/3)%1,dir=zst==="spricht"?ph:1-ph;g.globalAlpha=(1-ph)*.5;g.strokeStyle="rgb("+Math.round(aktuell.fr)+","+Math.round(aktuell.fg)+","+Math.round(aktuell.fb)+")";g.lineWidth=2;g.beginPath();g.arc(cx,cy,R*(.5+dir*1.3),0,6.283);g.stroke()}}
+  g.globalCompositeOperation="source-over";g.globalAlpha=1;
+  requestAnimationFrame(frame)}
+
+// ---------- Sprechen mit Atlas ----------
+var angemeldet=true;try{var altpw=localStorage.getItem("atlas_pw");if(altpw){localStorage.removeItem("atlas_pw");angemeldet=false;fetch("api/anmelden",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pw:altpw})}).then(function(r){angemeldet=r.ok;return r.json()}).then(function(j){merkeToken(j&&j.token)})}}catch(e){}
+var verlauf=[],audioEl=new Audio(),aufn=null,abbruch=0,gespraech=false;
+function weiter(id){if(id===abbruch&&gespraech)setTimeout(function(){if(window.AtlasAnim&&AtlasAnim.liest&&AtlasAnim.liest())return weiter(id);if(id===abbruch&&gespraech&&zst==="bereit")aufnehmen(true)},250)}
+// Die Nachrichten-Animation liest ihre Meldungen selbst vor, jede genau zur passenden Karte
+window.AtlasSprecher={
+  laden:function(t){return api("sprechen",{text:t},true).catch(function(){return null})},
+  spiel:function(blob){return new Promise(function(ok){if(!(blob instanceof Blob))return ok();window.AtlasSprecher.stopp();var a=new Audio(URL.createObjectURL(blob));window.AtlasSprecher.a=a;var f=function(){ok()};a.onended=f;a.onerror=f;a.play().catch(f);setTimeout(f,25000)})},
+  frei:function(){return new Promise(function(ok){var n=0;(function p(){if(audioEl.paused||audioEl.ended||n++>40)return ok();setTimeout(p,200)})()})},
+  stopp:function(){try{if(this.a){this.a.pause();this.a=null}}catch(e){}}
+};
+function zeige(label,text){document.getElementById("werklabel").textContent=label;document.getElementById("werktext").textContent=text;var st=label==="BEREIT";klein=st;document.body.classList.toggle("im-gespraech",!st);document.body.classList.toggle("werk-leer",st&&/^Tippe auf die Kugel oder/.test(text));messen();if(st)kachelnLaden()}
+function merkeToken(t){try{if(t){localStorage.setItem("atlas_t",t);if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}}catch(e){}}
+function tokenHeader(){var h={"Content-Type":"application/json"};try{var t=localStorage.getItem("atlas_t");if(t)h["x-atlas-s"]=t}catch(e){}return h}
+function frageNachPasswort(fehl){return new Promise(function(ok){
+  var box=document.getElementById("pwbox"),inp=document.getElementById("pwin"),f=document.getElementById("pwform");
+  document.getElementById("pwtext").textContent=fehl||"Passwort für Atlas (das aus der Einrichtung)";box.style.display="flex";inp.value="";setTimeout(function(){inp.focus()},50);
+  f.onsubmit=function(e){e.preventDefault();var v=inp.value.trim();if(!v)return;
+    fetch("api/anmelden",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pw:v})}).then(function(r){return r.json().then(function(j){return{r:r,j:j}})}).then(function(x){
+      if(x.r.ok&&x.j.ok){merkeToken(x.j.token);box.style.display="none";ok()}else{frageNachPasswort(x.j.fehler||"Passwort falsch").then(ok)}
+    }).catch(function(){frageNachPasswort("Keine Verbindung, bitte noch einmal").then(ok)})}})}
+function api(name,body,roh,zweiter){
+  return fetch("api/"+name,{method:"POST",headers:tokenHeader(),body:JSON.stringify(body)}).then(function(r){
+    if(r.status===401&&!zweiter){return frageNachPasswort().then(function(){return api(name,body,roh,true)})}
+    if(roh&&r.ok&&(r.headers.get("content-type")||"").indexOf("audio")===0){var sv=r.headers.get("x-server-ms"),fi=r.headers.get("x-fish-ms");return r.blob().then(function(x){x.srv=sv;x.fish=fi;return x})}
+    return r.json()});
+}
+window.AtlasApi=api;
+function sprichHandy(text,sprache,id){
+  if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return false;
+  try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(text);u.lang=sprache;u.rate=1;
+    var vs=speechSynthesis.getVoices()||[],c=sprache.split("-")[0].toLowerCase();
+    var v=vs.filter(function(x){return x.lang&&x.lang.toLowerCase().replace("_","-")===sprache.toLowerCase()})[0]||vs.filter(function(x){return x.lang&&x.lang.toLowerCase().split(/[-_]/)[0]===c})[0];if(v)u.voice=v;
+    u.onend=u.onerror=function(){if(id===abbruch){setze("bereit");weiter(id)}};
+    setze("spricht");speechSynthesis.speak(u);return true}catch(e){return false}}
+function fehler(t){if(window.AtlasAnim)AtlasAnim.vorabEnde();gespraech=false;setze("bereit");zeige("FEHLER",t)}
+function aufnehmen(auto){standort();
+  if(!navigator.mediaDevices||!window.MediaRecorder){fehler("Dieser Browser kann nicht aufnehmen");return}
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(strom){
+    var typ=["audio/webm;codecs=opus","audio/webm","audio/mp4"].filter(function(t){return MediaRecorder.isTypeSupported(t)})[0]||"";
+    var mr=new MediaRecorder(strom,typ?{mimeType:typ}:undefined),teile=[],gesprochen=false,letztLaut=0,start=Date.now(),gestoppt=false,senden=true;
+    var ac=new (window.AudioContext||window.webkitAudioContext)(),quelle=ac.createMediaStreamSource(strom),an=ac.createAnalyser();an.fftSize=1024;quelle.connect(an);var daten=new Uint8Array(an.fftSize);
+    function stopp(snd){if(gestoppt)return;gestoppt=true;senden=snd;clearInterval(timer);try{mr.stop()}catch(e){}}
+    var timer=setInterval(function(){an.getByteTimeDomainData(daten);var s=0;for(var i=0;i<daten.length;i++){var v=(daten[i]-128)/128;s+=v*v}var rms=Math.sqrt(s/daten.length),jetzt=Date.now();
+      if(rms>.03){gesprochen=true;letztLaut=jetzt}
+      if(gesprochen&&jetzt-letztLaut>1100)stopp(true);
+      else if(!gesprochen&&jetzt-start>(auto?8000:9000))stopp(false);
+      else if(jetzt-start>40000)stopp(true)},100);
+    mr.ondataavailable=function(e){if(e.data&&e.data.size)teile.push(e.data)};
+    mr.onstop=function(){strom.getTracks().forEach(function(t){t.stop()});try{ac.close()}catch(e){}aufn=null;
+      if(!senden||!gesprochen){gespraech=false;setze("bereit");zeige("BEREIT",auto?"Gespräch beendet. Tippe und sprich.":"Ich habe nichts gehört. Tippe und sprich.");return}
+      verarbeiten(new Blob(teile,{type:mr.mimeType||typ||"audio/webm"}))};
+    aufn={stopp:stopp,gesprochen:function(){return gesprochen}};mr.start();setze("hoert");zeige("DU","Ich höre dir zu …");
+  }).catch(function(){fehler("Kein Zugriff aufs Mikrofon. Bitte erlauben.")});
+}
+var stCache=null,stZeit=0,stLaeuft=null;
+function stHolen(){if(stLaeuft)return stLaeuft;stLaeuft=new Promise(function(ok){if(!navigator.geolocation)return ok(null);var fertig=false,t=setTimeout(function(){if(!fertig){fertig=true;ok(null)}},4000);try{navigator.geolocation.getCurrentPosition(function(p){if(fertig)return;fertig=true;clearTimeout(t);stCache={lat:p.coords.latitude,lon:p.coords.longitude};stZeit=Date.now();ok(stCache)},function(){if(fertig)return;fertig=true;clearTimeout(t);ok(null)},{maximumAge:120000,timeout:3500})}catch(e){clearTimeout(t);ok(null)}}).then(function(r){stLaeuft=null;return r});return stLaeuft}
+// Standort ohne Warten: Ein Wert bis 10 Minuten alt wird sofort genommen (und im Hintergrund erneuert), nur ohne Wert wird gewartet.
+function standort(){var alt=Date.now()-stZeit;if(stCache&&alt<600000){if(alt>90000)stHolen();return Promise.resolve(stCache)}return stHolen()}
+function alsBase64(blob){return new Promise(function(ok){var fr=new FileReader();fr.onloadend=function(){ok(String(fr.result).split(",")[1]||"")};fr.readAsDataURL(blob)})}
+function stuecke(t){
+  // Stimme in Stuecke teilen, die immer groesser werden (ca. 18, 40, 100 Zeichen, dann der Rest): das erste ist schnell da,
+  // jedes weitere ist fertig, bevor das vorige ausgesprochen ist (Fish braucht etwa so lange wie die Sprechzeit). Schnitt nur an Komma, Doppelpunkt, Satzende.
+  t=String(t||"").trim();if(!t)return [""];
+  var ph=t.split(/(?<=[,:;.!?…])(?<!\d\.)\s+/),ziel=[18,40,100],out=[],cur="";
+  for(var i=0;i<ph.length;i++){cur+=(cur?" ":"")+ph[i];if(out.length<3&&cur.length>=ziel[out.length]){out.push(cur);cur=""}}
+  if(cur)out.push(cur);return out}
+window.__stuecke=stuecke;
+function antworten(id,text,sprache){
+  var t0=Date.now(),t1=0;
+  if(window.AtlasAnim&&AtlasAnim.an()&&/nachricht|neuigkeit|was gibt.{0,12}neu|was ist.{0,12}(los|passiert)|weltgeschehen/i.test(text))AtlasAnim.vorab(); // Weltkugel sofort zeigen, die Meldungen kommen gleich
+  return standort().then(function(st){return api("denken",{text:text,verlauf:verlauf,sprache:sprache,standort:st,app:!!window.AtlasApp,whatsapp:waInbox()})}).then(function(d){
+      if(id!==abbruch)return;t1=Date.now();if(!d||!d.ok){fehler(d&&d.fehler||"Ich konnte nicht antworten");return}
+      kachelZeit=0; // nach jeder Antwort kann sich etwas geaendert haben (Notiz geloescht, Termin neu): Kacheln beim Zurueck neu laden
+      verlauf.push({rolle:"du",text:text},{rolle:"atlas",text:d.antwort});if(verlauf.length>24)verlauf=verlauf.slice(-24);
+      var fz=(d.werkzeuge||[]).filter(function(w){return w.fehler&&w.fehler.indexOf("noch nicht gebaut")<0}).map(function(w){return w.name+": "+w.fehler}).join(" | ");zeige("ATLAS",d.antwort+(fz?"\n\n[Technik: "+fz+"]":""));if(window.AtlasAnim)AtlasAnim.play(d.werkzeuge);(d.werkzeuge||[]).forEach(function(w){if(w.name==="navigation"&&w.ok&&w.erg&&w.erg.fuerApp){var nv=w.erg.fuerApp;if(window.AtlasApp&&AtlasApp.navigation){var nr=AtlasApp.navigation(JSON.stringify(nv));if(nr!=="ok")setTimeout(function(){zeige("FEHLER","Navigation nicht gestartet: "+nr)},800)}else if(nv.url)setTimeout(function(){window.open(nv.url,"_blank")},1500)}});(d.werkzeuge||[]).forEach(function(w){if(w.name==="spotify"&&w.ok&&w.erg&&w.erg.fuerApp){var sr="keine_app";try{sr=window.AtlasApp&&AtlasApp.spotify?AtlasApp.spotify(JSON.stringify(w.erg.fuerApp)):"keine_app"}catch(e){sr="fehler"}if(sr!=="ok")setTimeout(function(){zeige("FEHLER",sr==="keine_spotify"?"Spotify ist auf dem Handy nicht installiert":sr==="keine_app"?"Spotify geht nur in der Atlas-App":"Spotify nicht gestartet: "+sr)},800)}});(d.werkzeuge||[]).forEach(function(w){if(w.name==="whatsapp"&&w.ok&&w.erg&&w.erg.fuerApp&&w.erg.fuerApp.aktion==="wa_senden"){var wf=w.erg.fuerApp,wr2="keine_app";try{wr2=window.AtlasApp&&AtlasApp.waSenden?AtlasApp.waSenden(wf.an,wf.text):"keine_app"}catch(e){wr2="fehler"}if(wr2!=="ok")setTimeout(function(){zeige("FEHLER",wr2==="keine_benachrichtigung"?"WhatsApp nicht gesendet: Die Nachricht von "+wf.an+" ist nicht mehr offen. Bitte selbst in WhatsApp antworten.":wr2==="kein_zugriff"?"WhatsApp nicht gesendet: Zugriff auf Benachrichtigungen fehlt":"WhatsApp nicht gesendet: "+wr2)},800)}});(d.werkzeuge||[]).forEach(function(w){if(w.name==="vertretung"&&w.ok&&w.erg&&w.erg.fuerApp){if(!VB)setTimeout(function(){zeige("FEHLER","Die WhatsApp-Vertretung geht nur in der Atlas-App auf dem Handy")},800);else if(!w.erg.fuerApp.status){var vr=vSet({an:w.erg.fuerApp.an,token:localStorage.getItem("atlas_t")||""});if(vr!=="ok")setTimeout(function(){zeige("FEHLER",vMeldung(vr)||"Vertretung nicht geschaltet: "+vr)},800)}}});(d.werkzeuge||[]).forEach(function(w){if(w.name==="erinnerung"&&w.ok){kachelZeit=0;setTimeout(kachelnLaden,1500)}if(w.name==="erinnerung"&&w.ok&&w.erg&&w.erg.fuerApp&&window.AtlasApp&&AtlasApp.erinnerungen){try{AtlasApp.erinnerungen(JSON.stringify(w.erg.fuerApp.liste))}catch(e){}}});(d.werkzeuge||[]).forEach(function(w){if(w.name==="wecker"&&w.ok&&w.erg&&w.erg.fuerApp&&window.AtlasApp){try{var wr=AtlasApp.wecker(JSON.stringify(w.erg.fuerApp));if(wr!=="ok")setTimeout(function(){zeige("FEHLER","Wecker nicht gestellt: "+wr)},800)}catch(e){setTimeout(function(){zeige("FEHLER","Wecker nicht gestellt: Die App kennt diese Funktion nicht (alte App oder alte Seite)")},800)}}});(d.werkzeuge||[]).forEach(function(w){if(w.name==="kuendigung"&&w.ok&&w.erg&&w.erg.brief)window.briefZeigen("KÜNDIGUNG"+(w.erg.anbieter?" · "+w.erg.anbieter:""),w.erg.brief)});
+      var code=(d.sprache||"").split("-")[0];
+      if(code&&code!=="de"&&sprichHandy(d.antwort,d.sprache,id))return;
+      // Antwort in kurze Stuecke teilen und alle gleichzeitig vertonen: das erste (kurze) ist schnell da, die Stimme beginnt frueher
+      var sagt=d.antwort,nw=(d.werkzeuge||[]).filter(function(w){return w.name==="nachrichten"&&w.ok&&w.erg&&w.erg.ebenen})[0];
+      if(nw&&!(window.AtlasAnim&&AtlasAnim.an())){var hl=[];["welt","deutschland","region","ort"].forEach(function(k){(nw.erg.ebenen[k]||[]).forEach(function(q){hl.push(q.titel)})});if(hl.length)sagt+=" "+hl.join(". ")+"."} // ohne Animation liest Atlas die Meldungen selbst vor
+      var teile=stuecke(sagt),pr=teile.map(function(t){return api("sprechen",{text:t},true)});
+      function spiel(i){
+        if(id!==abbruch)return;
+        if(i>=pr.length){setze("bereit");weiter(id);return}
+        return pr[i].then(function(a){
+          if(id!==abbruch)return;
+          if(!(a instanceof Blob)){if(i===0&&sprichHandy(sagt,d.sprache||"de-DE",id))return;gespraech=false;setze("bereit");return}
+          audioEl.src=URL.createObjectURL(a);audioEl.onended=function(){if(id===abbruch)spiel(i+1)};
+          if(i===0)setze("spricht");audioEl.play().catch(function(){setze("bereit")})}).catch(function(){if(id===abbruch){gespraech=false;setze("bereit")}})}
+      return spiel(0)})
+}
+function verarbeiten(blob){
+  var id=++abbruch;setze("denkt");zeige("ATLAS","Ich verstehe dich …");
+  alsBase64(blob).then(function(b64){return api("hoeren",{audio:b64,mime:blob.type})}).then(function(h){
+    if(id!==abbruch)return;if(!h||!h.ok){fehler(h&&h.fehler||"Spracherkennung hat nicht geklappt");return}
+    if(!h.text){gespraech=false;setze("bereit");zeige("BEREIT","Ich habe nichts verstanden. Tippe und sprich noch einmal.");return}
+    zeige("DU",h.text);
+    return antworten(id,h.text,h.sprache)
+  }).catch(function(e){if(id===abbruch)fehler("Verbindung gestört: "+(e&&e.message||e))});
+}
+cv.addEventListener("click",function(){
+  if(zst==="hoert"&&aufn){if(aufn.gesprochen())aufn.stopp(true);else{gespraech=false;aufn.stopp(false)}return}
+  if(zst==="spricht"){gespraech=false;abbruch++;audioEl.pause();try{speechSynthesis.cancel()}catch(e){}setze("bereit");zeige("BEREIT","Tippe und sprich");return}
+  if(zst==="denkt"){gespraech=false;abbruch++;setze("bereit");zeige("BEREIT","Abgebrochen");return}
+  gespraech=true;aufnehmen(false)});
+
+function textFrage(text){text=String(text||"").trim();if(!text)return;
+  if(aufn){try{aufn.stopp(false)}catch(e){}}try{audioEl.pause()}catch(e){}try{speechSynthesis.cancel()}catch(e){}
+  gespraech=false;var id=++abbruch;setze("denkt");zeige("DU",text);
+  antworten(id,text,"").catch(function(e){if(id===abbruch)fehler("Verbindung gestört: "+(e&&e.message||e))})}
+document.getElementById("eingabe").addEventListener("submit",function(ev){ev.preventDefault();var f=document.getElementById("eintext"),t=f.value;f.value="";f.blur();textFrage(t)});
+Array.prototype.forEach.call(document.querySelectorAll(".kachel[data-frage]"),function(k){k.addEventListener("click",function(){textFrage(k.getAttribute("data-frage"))})});
+(function(){var box=document.getElementById("briefbox"),tx=document.getElementById("brieftext");
+window.briefZeigen=function(titel,text){document.getElementById("brieftitel").textContent=titel||"BRIEF";tx.value=text;box.className="offen"};
+document.getElementById("b-zu").addEventListener("click",function(){box.className=""});
+document.getElementById("b-kopieren").addEventListener("click",function(){var b=this;function ok(){b.textContent="Kopiert ✓";setTimeout(function(){b.textContent="Kopieren"},1800)}
+  try{navigator.clipboard.writeText(tx.value).then(ok,function(){tx.select();document.execCommand("copy");ok()})}catch(e){tx.select();try{document.execCommand("copy");ok()}catch(e2){}}});
+document.getElementById("b-pdf").addEventListener("click",function(){window.print()})})();
+(function(){var kn=document.getElementById("fotoknopf"),wahl=document.getElementById("fotowahl"),di=document.getElementById("fotodatei"),dk=document.getElementById("fotokamera");
+function zu(){wahl.hidden=true}
+kn.addEventListener("click",function(ev){ev.stopPropagation();wahl.hidden=!wahl.hidden});
+document.addEventListener("click",function(ev){if(!wahl.hidden&&!wahl.contains(ev.target))zu()});
+document.getElementById("fw-kamera").addEventListener("click",function(){zu();dk.value="";dk.click()});
+document.getElementById("fw-galerie").addEventListener("click",function(){zu();di.value="";di.click()});
+var PDFJS="3.11.174",pdfLaedt=null;
+function pdfLib(){if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+  if(!pdfLaedt)pdfLaedt=new Promise(function(ok,nein){var sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/pdfjs-dist@"+PDFJS+"/build/pdf.min.js";
+    sc.onload=function(){if(window.pdfjsLib){window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@"+PDFJS+"/build/pdf.worker.min.js";ok(window.pdfjsLib)}else nein(new Error("PDF-Lesehilfe fehlt"))};
+    sc.onerror=function(){pdfLaedt=null;nein(new Error("PDF-Lesehilfe nicht ladbar (Internet?)"))};document.head.appendChild(sc)});
+  return pdfLaedt}
+function istPdf(f){return f.type==="application/pdf"||/\.pdf$/i.test(f.name||"")}
+function pdfLesen(f){return pdfLib().then(function(lib){return f.arrayBuffer().then(function(buf){return lib.getDocument({data:buf}).promise})}).then(function(pdf){
+  var text="",n=Math.min(3,pdf.numPages),p=Promise.resolve();
+  for(var i=1;i<=n;i++)(function(i){p=p.then(function(){return pdf.getPage(i).then(function(pg){return pg.getTextContent()}).then(function(tc){text+=tc.items.map(function(x){return (x.str||"")+(x.hasEOL?"\n":" ")}).join("")+"\n"}).catch(function(){})})})(i);
+  return p.then(function(){return pdf.getPage(1)}).then(function(pg){var v1=pg.getViewport({scale:1}),k=1600/Math.max(v1.width,v1.height),vp=pg.getViewport({scale:k}),c=document.createElement("canvas");c.width=Math.max(1,Math.round(vp.width));c.height=Math.max(1,Math.round(vp.height));
+    var cx=c.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,c.width,c.height);
+    return pg.render({canvasContext:cx,viewport:vp}).promise.then(function(){return {bild:c.toDataURL("image/jpeg",0.82),text:text.replace(/[ \t]+/g," ").replace(/ ?\n ?/g,"\n").replace(/\n{3,}/g,"\n\n").trim().slice(0,6000)}})})})}
+function hochladen(id,nutz){api("foto",nutz).then(function(r){if(id!==abbruch)return;
+  if(!r||!r.ok){fehler((r&&r.fehler)||"Das Foto hat nicht geklappt.");return}
+  textFrage("Ich habe ein Foto gemacht.")}).catch(function(e){if(id===abbruch)fehler("Verbindung gestört: "+(e&&e.message||e))})}
+function foto(f){if(!f)return;
+  if(aufn){try{aufn.stopp(false)}catch(e){}}try{audioEl.pause()}catch(e){}try{speechSynthesis.cancel()}catch(e){}
+  gespraech=false;var id=++abbruch;setze("denkt");
+  if(istPdf(f)){zeige("DU","PDF wird gelesen …");pdfLesen(f).then(function(d){if(id===abbruch)hochladen(id,d)}).catch(function(e){if(id===abbruch)fehler("Das PDF konnte ich nicht lesen: "+(e&&e.message||e))});return}
+  zeige("DU","Foto wird angesehen …");
+  var bild=new Image(),url=URL.createObjectURL(f);
+  bild.onerror=function(){URL.revokeObjectURL(url);fehler("Das Foto konnte ich nicht öffnen.")};
+  bild.onload=function(){URL.revokeObjectURL(url);var m=Math.max(bild.width,bild.height),k=m>1600?1600/m:1,c=document.createElement("canvas");c.width=Math.round(bild.width*k);c.height=Math.round(bild.height*k);
+    c.getContext("2d").drawImage(bild,0,0,c.width,c.height);hochladen(id,{bild:c.toDataURL("image/jpeg",0.82)})};
+  bild.src=url}
+di.addEventListener("change",function(){foto(di.files&&di.files[0])});dk.addEventListener("change",function(){foto(dk.files&&dk.files[0])})})();
+document.getElementById("werk").addEventListener("click",function(){if(zst==="bereit"&&document.getElementById("werklabel").textContent!=="BEREIT"){if(window.AtlasAnim)AtlasAnim.stop();zeige("BEREIT","Tippe auf die Kugel oder eine Kachel")}});
+
+var LISTEN={einkauf:{titel:"EINKAUFSLISTE",neu:"+ Artikel hinzufügen"},mitnehmen:{titel:"MITNEHMEN",neu:"+ Sache hinzufügen"}},LDATA={},offeneListe=null;
+function zeileBauen(e,klick){var z=document.createElement("div");z.className="ek"+(e.erledigt?" ok":"");var i=document.createElement("i");i.textContent=e.erledigt?"✔":"";var t=document.createElement("span");t.textContent=e.text;z.appendChild(i);z.appendChild(t);if(klick)z.addEventListener("click",function(){klick(z,i)});return z}
+function listeSenden(name,body){body.aktion=body.aktion;body.liste=name;return api("start",body).then(function(r){if(r&&r.ok)listeZeigen(name,r.daten);return r})}
+function listeZeigen(name,d){var k=document.getElementById("k-"+name);if(!k||!d)return;
+  if(d.fehler){k.style.display=name==="mitnehmen"?"none":"";return}
+  LDATA[name]=d;var max=innerHeight<600?1:innerHeight<700?2:3,box=k.querySelector(".eke");box.innerHTML="";
+  k.querySelector("small").textContent=LISTEN[name].titel+(d.offen?" · "+d.offen+" OFFEN":"");
+  d.eintraege.slice(0,max).forEach(function(e){box.appendChild(zeileBauen(e,null))});
+  var rest=d.eintraege.length-Math.min(max,d.eintraege.length);if(rest>0){var m=document.createElement("div");m.className="ekmehr";m.textContent="+ "+rest+" weitere";box.appendChild(m)}
+  if(!d.eintraege.length){var l=document.createElement("div");l.className="ekmehr";l.textContent="Leer – tippen zum Hinzufügen";box.appendChild(l)}
+  k.style.display=(name==="mitnehmen"&&!d.eintraege.length&&offeneListe!==name)?"none":"";setTimeout(messen,0);
+  if(offeneListe===name)listeVoll()}
+function listeVoll(){var name=offeneListe,d=LDATA[name];if(!d)return;
+  document.getElementById("ltitel").textContent=LISTEN[name].titel;document.getElementById("lzahl").textContent=d.offen+" offen";document.getElementById("lneu").placeholder=LISTEN[name].neu;
+  var box=document.getElementById("lliste");box.innerHTML="";
+  d.eintraege.forEach(function(e){box.appendChild(zeileBauen(e,function(z,i){var neu=!z.classList.contains("ok");z.classList.toggle("ok",neu);i.textContent=neu?"✔":"";listeSenden(name,{aktion:"umschalten",id:e.id,erledigt:neu}).catch(function(){z.classList.toggle("ok",!neu);i.textContent=!neu?"✔":""})}))});
+  var r=document.getElementById("lraus");r.textContent="Abgehakte entfernen ("+(d.erledigt||0)+")";r.disabled=!d.erledigt}
+function listeOeffnen(name){offeneListe=name;listeVoll();document.getElementById("listebox").classList.add("auf")}
+function listeSchliessen(){document.getElementById("listebox").classList.remove("auf");var n=offeneListe;offeneListe=null;if(n)listeZeigen(n,LDATA[n])}
+document.getElementById("lzu").addEventListener("click",listeSchliessen);
+document.getElementById("lraus").addEventListener("click",function(){if(offeneListe)listeSenden(offeneListe,{aktion:"aufraeumen"})});
+document.getElementById("lneu").addEventListener("keydown",function(ev){if(ev.key!=="Enter")return;ev.preventDefault();var inp=ev.target,t=inp.value.trim();if(!t||!offeneListe)return;inp.value="";listeSenden(offeneListe,{aktion:"hinzu",text:t}).catch(function(){inp.value=t})});
+Array.prototype.forEach.call(document.querySelectorAll(".kachel.liste"),function(k){k.addEventListener("click",function(){listeOeffnen(k.id.slice(2))})});
+var ERL=[];
+function erZeit(z){var d=String(z).slice(0,10),h=String(z).slice(11,16),t=new Date(),iso=function(x){return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")},m=new Date(t.getTime()+864e5);return(d===iso(t)?"heute":d===iso(m)?"morgen":d.slice(8)+"."+d.slice(5,7)+".")+" "+h}
+function erSync(app){if(app&&window.AtlasApp&&AtlasApp.erinnerungen){try{AtlasApp.erinnerungen(JSON.stringify(app.liste))}catch(e){}}}
+function erinnerungenZeigen(d){var k=document.getElementById("k-erinn");if(!k||!d||d.fehler)return;ERL=d.eintraege||[];
+  k.style.display=ERL.length?"":"none";if(ERL.length){k.querySelector("b").textContent=ERL.length+(ERL.length===1?" offen":" offen");k.querySelector("span").textContent=ERL.slice(0,2).map(function(e){return erZeit(e.zeit)+" "+e.text}).join("  ·  ")}
+  setTimeout(messen,0);if(document.getElementById("erbox").classList.contains("auf"))erVoll()}
+function erVoll(){var box=document.getElementById("erliste");box.innerHTML="";document.getElementById("erzahl").textContent=ERL.length+" offen";
+  if(!ERL.length){var l=document.createElement("div");l.className="erleer";l.textContent="Keine Erinnerungen";box.appendChild(l);return}
+  ERL.forEach(function(e){var z=document.createElement("div");z.className="er";z.innerHTML='<span class="ez"></span><span class="et"></span><button type="button" aria-label="Löschen">✕</button>';z.querySelector(".ez").textContent=erZeit(e.zeit);z.querySelector(".et").textContent=e.text;
+    z.querySelector("button").addEventListener("click",function(){z.classList.add("weg");api("start",{aktion:"erinnerung_weg",id:e.id}).then(function(r){if(r&&r.ok){erSync(r.app);erinnerungenZeigen(r.erinnerungen)}else z.classList.remove("weg")}).catch(function(){z.classList.remove("weg")})});box.appendChild(z)})}
+document.getElementById("k-erinn").addEventListener("click",function(){erVoll();document.getElementById("erbox").classList.add("auf")});
+document.getElementById("erzu").addEventListener("click",function(){document.getElementById("erbox").classList.remove("auf")});
+
+var VB=window.AtlasApp&&AtlasApp.vertretungStand?AtlasApp:null;
+function vStand(){try{return JSON.parse(VB.vertretungStand())}catch(e){return {}}}
+function vToken(){try{var t=localStorage.getItem("atlas_t");if(VB&&t)VB.vertretung(JSON.stringify({token:t}))}catch(e){}}
+function vKachel(){if(!VB)return;var k=document.getElementById("k-vertr"),st=vStand(),n=(st.kontakte||[]).length;k.style.display="";k.querySelector("b").textContent=st.an?"AN":"Aus";k.querySelector("span").textContent=st.an?"Antwortet für "+n+(n===1?" Kontakt":" Kontakte"):"Tippen zum Einrichten";k.classList.toggle("warn",!!st.an);setTimeout(messen,0)}
+function vSet(o){var r=VB.vertretung(JSON.stringify(o));vKachel();return r}
+function vMeldung(r){return r==="kein_zugriff"?"Bitte erst in den Handy-Einstellungen den Zugriff auf Benachrichtigungen für Atlas erlauben (Knopf in der WhatsApp-Vertretung).":r==="keine_kontakte"?"Wähle erst in der WhatsApp-Vertretung die Kontakte aus, für die Atlas antworten darf.":""}
+var vMsg="";
+function vVoll(){var st=vStand(),box=document.getElementById("vinh");box.innerHTML="";if(vMsg){var mm=document.createElement("p");mm.style.cssText="color:#ff8a7a;font-size:16px";mm.textContent=vMsg;box.appendChild(mm)}document.getElementById("vtitel").textContent=st.an?"An":"Aus";
+  var tg=document.createElement("button");tg.type="button";tg.className="vtog"+(st.an?" an":"");tg.textContent=st.an?"Atlas antwortet für mich – ausschalten":"Einschalten";
+  tg.addEventListener("click",function(){var r=vSet({an:!st.an,token:localStorage.getItem("atlas_t")||""});vMsg=r!=="ok"?(vMeldung(r)||"Fehler: "+r):"";vVoll()});box.appendChild(tg);
+  var p=document.createElement("p");p.textContent="Atlas antwortet nur auf einzelne Chats der gewählten Kontakte, nie in Gruppen. Er stellt sich als dein Assistent vor und sagt nichts zu, nennt keine privaten Daten.";box.appendChild(p);
+  if(!st.zugriff){var z=document.createElement("button");z.type="button";z.className="vbtn";z.textContent="Zugriff auf Benachrichtigungen erlauben";z.addEventListener("click",function(){VB.zugriffOeffnen()});box.appendChild(z);var q=document.createElement("p");q.textContent="In der Liste Atlas anschalten, dann zurück hierher.";box.appendChild(q)}
+  var hm=document.createElement("h3");hm.textContent="ATLAS SPRINGT EIN NACH";box.appendChild(hm);
+  var rw=document.createElement("div");rw.style.cssText="display:flex;gap:8px;flex-wrap:wrap";[0,2,5,10,15,30].forEach(function(m){var bt=document.createElement("button");bt.type="button";bt.className="vtog"+(st.minuten===m?" an":"");bt.style.cssText="width:auto;flex:1;min-width:84px;padding:12px 8px;font-size:17px";bt.textContent=m?m+" Min":"sofort";bt.addEventListener("click",function(){vSet({minuten:m});vVoll()});rw.appendChild(bt)});box.appendChild(rw);
+  var pm=document.createElement("p");pm.textContent="Atlas wartet so lange. Hast du die Nachricht bis dahin selbst gelesen oder beantwortet, schreibt er nichts.";box.appendChild(pm);
+  var h=document.createElement("h3");h.textContent="KONTAKTE (WHATSAPP-NAME)";box.appendChild(h);
+  var alle=(st.kontakte||[]).slice();(st.gesehen||[]).forEach(function(g){if(alle.map(function(x){return x.toLowerCase()}).indexOf(g.toLowerCase())<0)alle.push(g)});
+  if(!alle.length){var e=document.createElement("p");e.textContent="Noch keiner da. Sobald dir jemand auf WhatsApp schreibt, erscheint er hier. Oder tippe den Namen unten ein.";box.appendChild(e)}
+  alle.forEach(function(n){var on=(st.kontakte||[]).map(function(x){return x.toLowerCase()}).indexOf(n.toLowerCase())>=0,r=document.createElement("div");r.className="vk"+(on?" ok":"");r.innerHTML="<i>✔</i><span></span>";r.querySelector("span").textContent=n;
+    r.addEventListener("click",function(){var l=(st.kontakte||[]).filter(function(x){return x.toLowerCase()!==n.toLowerCase()});if(!on)l.push(n);vSet({kontakte:l});vVoll()});box.appendChild(r)});
+  var inp=document.createElement("input");inp.id="vneu";inp.placeholder="+ Name genau wie in WhatsApp";inp.maxLength=60;inp.addEventListener("keydown",function(ev){if(ev.key!=="Enter")return;ev.preventDefault();var t=inp.value.trim();if(!t)return;var l=(st.kontakte||[]).slice();l.push(t);vSet({kontakte:l});vVoll()});box.appendChild(inp);
+  var lg=st.log||[];if(lg.length){var h2=document.createElement("h3");h2.textContent="LETZTE ANTWORTEN";box.appendChild(h2);lg.slice(0,8).forEach(function(x){var d=document.createElement("div");d.className="vl";var t=new Date(x.zeit);d.innerHTML="<b></b> <span></span><em></em>";d.querySelector("b").textContent=x.von+" · "+("0"+t.getHours()).slice(-2)+":"+("0"+t.getMinutes()).slice(-2);d.querySelector("span").textContent=": "+x.text;d.querySelector("em").textContent="→ "+x.antwort;box.appendChild(d)})}}
+if(VB){vToken();vKachel();document.getElementById("k-vertr").addEventListener("click",function(){vVoll();document.getElementById("vbox").classList.add("auf")});document.getElementById("vzu").addEventListener("click",function(){vMsg="";document.getElementById("vbox").classList.remove("auf");vKachel()})}
+
+(function(){var HA=window.AtlasApp&&AtlasApp.heyAtlas&&AtlasApp.heyStand?AtlasApp:null,k=document.getElementById("k-hey");if(!HA||!k)return;
+function stand(){try{return JSON.parse(HA.heyStand())}catch(e){return {}}}
+function zeigen(m){var st=stand();k.style.display="";k.querySelector("b").textContent=st.an?"AN":"Aus";k.querySelector("span").textContent=m||(st.an?(st.ueberlagerung?(st.zuletzt||"Sag Hey Atlas, auch bei geschlossener App"):"Läuft. Erlaube noch Über anderen Apps einblenden"):"Tippen zum Einschalten");k.classList.toggle("warn",!!st.an);setTimeout(messen,0)}
+k.addEventListener("click",function(){var st=stand(),r=HA.heyAtlas(!st.an);zeigen(r==="kein_mikro"?"Mikrofon-Erlaubnis fehlt":r.indexOf("fehler")===0?"Ging nicht: "+r:"")});
+zeigen();setInterval(function(){if(!document.hidden)zeigen()},3000);
+(function(){var PB=window.AtlasApp&&AtlasApp.parkGeraete?AtlasApp:null,k=document.getElementById("k-park"),box=document.getElementById("pinh");if(!PB||!k)return;
+function st(){try{return JSON.parse(PB.parkGeraete())}catch(e){return {}}}
+function kachel(){var s=st();k.style.display="";k.querySelector("b").textContent=s.gewaehlt?"AUTOMATISCH":"Einrichten";k.querySelector("span").textContent=s.gewaehlt?"Auto: "+(s.name||"gewählt")+(s.hintergrund?"":" · Standort „Immer“ erlauben"):"Tippen: Auto-Bluetooth wählen";k.classList.toggle("warn",!!s.gewaehlt);setTimeout(messen,0)}
+function knopf(t,cls,f){var b=document.createElement("button");b.type="button";b.className=cls;b.textContent=t;b.addEventListener("click",f);box.appendChild(b);return b}
+function text(t){var p=document.createElement("p");p.textContent=t;box.appendChild(p)}
+function voll(){var s=st();box.innerHTML="";
+  text("Wenn sich dieses Bluetooth-Gerät trennt (Auto aus), merkt sich Atlas, wo das Auto steht. Danach kannst du fragen: Wo steht mein Auto?");
+  if(!s.bt){knopf("Bluetooth-Zugriff erlauben","vbtn",function(){PB.parkBluetoothErlauben();setTimeout(voll,2500)});return}
+  var h=document.createElement("h3");h.textContent="DEIN AUTO (GEKOPPELTE GERÄTE)";box.appendChild(h);
+  if(!(s.geraete||[]).length)text("Keine gekoppelten Bluetooth-Geräte gefunden. Koppel das Auto zuerst in den Handy-Einstellungen.");
+  (s.geraete||[]).forEach(function(g){knopf(g.name,"vtog"+(s.gewaehlt===g.adresse?" an":""),function(){PB.parkWaehlen(s.gewaehlt===g.adresse?"":g.adresse,s.gewaehlt===g.adresse?"":g.name);voll();kachel()}).style.marginTop="8px"});
+  if(s.gewaehlt&&!s.hintergrund){var h2=document.createElement("h3");h2.textContent="STANDORT IM HINTERGRUND";box.appendChild(h2);text("Damit Atlas den Parkplatz auch bei geschlossener App speichern kann: Berechtigungen → Standort → „Immer zulassen“.");knopf("Einstellungen öffnen","vbtn",function(){PB.parkStandortOeffnen()})}
+  if(s.gewaehlt&&s.hintergrund)text("Alles bereit. Beim nächsten Trennen wird der Parkplatz gespeichert.")}
+k.addEventListener("click",function(){voll();document.getElementById("pbox").classList.add("auf")});
+document.getElementById("pzu").addEventListener("click",function(){document.getElementById("pbox").classList.remove("auf");kachel()});
+document.addEventListener("visibilitychange",function(){if(!document.hidden){kachel();if(document.getElementById("pbox").classList.contains("auf"))voll()}});
+kachel();})();
+window.atlasPause=function(){gespraech=false;if(zst==="hoert"&&aufn){try{aufn.stopp(false)}catch(e){}}};
+window.atlasWake=function(){if(zst==="spricht"){gespraech=false;abbruch++;try{audioEl.pause()}catch(e){}try{speechSynthesis.cancel()}catch(e){}setze("bereit")} /* Hey Atlas waehrend er spricht: sofort still und zuhoeren */
+  if(zst!=="bereit")return;var go=false;function los(){if(go)return;go=true;if(zst==="bereit"){gespraech=true;aufnehmen(false)}}
+  var W=["Ja, Boss?","Ja, Sir?","Was kann ich für dich tun?","Ich höre.","Ja, bitte?"];
+  try{if(window.speechSynthesis&&window.SpeechSynthesisUtterance){speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(W[Math.floor(Math.random()*W.length)]);u.lang="de-DE";u.rate=1.05;
+    var vs=speechSynthesis.getVoices()||[];for(var i=0;i<vs.length;i++)if((vs[i].lang||"").toLowerCase().replace("_","-").indexOf("de")===0){u.voice=vs[i];break}
+    u.onend=function(){setTimeout(los,150)};u.onerror=los;speechSynthesis.speak(u);setTimeout(los,2500);return}}catch(e){}
+  los()};})();
+function waInbox(){try{if(window.AtlasApp&&AtlasApp.waNachrichten)return JSON.parse(AtlasApp.waNachrichten())}catch(e){}return null}
+var kachelZeit=0,kachelLaeuft=false;
+function kachel(id,titel,zeile,warn){var k=document.getElementById("k-"+id);if(!k)return;k.querySelector("b").textContent=titel;k.querySelector("span").innerHTML="";k.querySelector("span").textContent=zeile||"";k.classList.toggle("warn",!!warn)}
+function kachelnLaden(){
+  if(kachelLaeuft||Date.now()-kachelZeit<300000||!angemeldet)return;kachelLaeuft=true;
+  standort().then(function(st){return api("start",{standort:st})}).then(function(d){
+    kachelLaeuft=false;if(!d||!d.ok)return;kachelZeit=Date.now();if(d.heimweg&&window.AtlasApp&&AtlasApp.heimweg){try{AtlasApp.heimweg(JSON.stringify(d.heimweg))}catch(e){}}if(d.briefing&&window.AtlasApp&&AtlasApp.briefing){try{AtlasApp.briefing(JSON.stringify(d.briefing))}catch(e){}}if(d.erinnerungen&&window.AtlasApp&&AtlasApp.erinnerungen){try{AtlasApp.erinnerungen(JSON.stringify(d.erinnerungen.liste))}catch(e){}}setTimeout(messen,0);
+    var t=d.termine||{};if(t.fehler)kachel("termine","Kalender?","Nicht verbunden oder nicht erreichbar");else if(!t.anzahl)kachel("termine","Heute frei","Keine Termine mehr");else kachel("termine",t.anzahl+(t.anzahl===1?" Termin":" Termine"),(t.zeilen||[]).join("  ·  "));
+    var w=d.wetter||{};if(w.fehler)kachel("wetter","–","Wetter nicht erreichbar");else kachel("wetter",(w.temperatur!=null?w.temperatur+" °":"–"),(w.text||"")+(w.schirm?" · Schirm mit"+(w.regen_ab?" (ab "+w.regen_ab+")":""):""),w.warnung);
+    var ta=d.tanken||{};if(ta.fehler)kachel("tanken","–","Keine Tankstelle gefunden");else kachel("tanken",ta.preis?ta.preis+" €":ta.name,(ta.preis?ta.name+"\n":"")+ta.entfernung);
+    erinnerungenZeigen(d.erinnerungsliste);listeZeigen("einkauf",d.einkauf);listeZeigen("mitnehmen",d.mitnehmen);
+    var no=d.notizen||{};if(no.fehler)kachel("notizen","–","Notizen nicht erreichbar");else if(!no.anzahl){kachel("notizen","Keine","Sag: Schreib dir auf …");document.getElementById("k-notizen").style.display="none"}else{document.getElementById("k-notizen").style.display="";kachel("notizen",no.anzahl+(no.anzahl===1?" Notiz":" Notizen"),(no.zeilen||[]).join("  ·  "))}
+  }).catch(function(){kachelLaeuft=false})}
+setze("bereit");zeige("BEREIT","Tippe auf die Kugel oder eine Kachel");requestAnimationFrame(frame);
+if("serviceWorker" in navigator){}
+})();
+</script>
+<script src="anim.js"></script>
+<script src="wizard.js"></script>
+<script>
+// Update-Meldung: in der Android-App prueft Atlas beim Start, ob im eigenen GitHub-Projekt eine neuere APK liegt.
+(function(){var A=window.AtlasApp;if(!A||!A.version)return;var v;try{v=JSON.parse(A.version())}catch(e){return}if(!v||!v.code)return;
+  var box=document.getElementById("upd"),tx=document.getElementById("updtext"),letzt=0;try{letzt=+localStorage.getItem("atlas_upd_z")||0}catch(e){}
+  if(Date.now()-letzt<4*3600*1000)return;
+  window.AtlasApi("update",{code:v.code}).then(function(j){
+    if(!j||!j.ok)return;try{localStorage.setItem("atlas_upd_z",String(Date.now()))}catch(e){}
+    var nein=0;try{nein=+localStorage.getItem("atlas_upd_nein")||0}catch(e){}
+    if(!j.neu||!j.url||j.nummer<=nein)return;
+    tx.textContent="Es gibt eine neue Version von Atlas ("+j.nummer+").";box.className="an";
+    document.getElementById("updgo").onclick=function(){try{A.oeffnen(j.url)}catch(e){}box.className=""};
+    document.getElementById("updnein").onclick=function(){try{localStorage.setItem("atlas_upd_nein",String(j.nummer))}catch(e){}box.className=""};
+  }).catch(function(){})})();
+</script>
+</body>
+</html>

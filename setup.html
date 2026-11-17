@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#030610">
+<title>Atlas Einrichtung</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#030610;color:#d7f8ff;font-family:system-ui,sans-serif;padding:calc(env(safe-area-inset-top) + 20px) 16px 40px;max-width:560px;margin:auto}
+h1{font-size:22px;letter-spacing:.3em;margin:0 0 4px}
+p{color:#8fb4c4;font-size:14px;line-height:1.5}
+a{color:#28dcff}
+.karte{border:1.5px solid #234660;border-radius:16px;padding:14px;margin:12px 0;background:rgba(6,22,36,.85)}
+.karte h2{font-size:16px;margin:0 0 4px}
+.stat{font-size:13px;margin:0 0 8px}
+.ok{color:#5be39b}.fehl{color:#ff7a7a}.neutral{color:#ffaa3c}
+input{width:100%;padding:12px;border-radius:10px;border:1.5px solid #234660;background:#06141f;color:#e6fcff;font-size:16px}
+.reihe{display:flex;gap:8px;margin-top:8px}
+button{flex:1;padding:12px;border-radius:10px;border:1.5px solid #28dcff;background:#082a3c;color:#e6fcff;font-size:14px;font-weight:600}
+button.zweit{border-color:#234660;background:transparent;color:#8fb4c4}
+.hilfe{font-size:12px;color:#5a8296;margin:6px 0 0}
+#schritte{display:none}
+</style>
+</head>
+<body>
+<h1>EINRICHTUNG</h1>
+<p style="text-align:center"><a href="index.html#einrichten" style="color:#28dcff">Einrichtungsassistent noch einmal starten</a></p>
+<p>Hier trägst du deine Schlüssel einmal ein. Sie werden verschlüsselt auf dem Server gespeichert und nie wieder angezeigt, nur die letzten 4 Zeichen. <a href="./">Zurück zu Atlas</a></p>
+
+<div class="karte" id="schritte"></div>
+
+<div class="karte" id="login">
+  <h2>Dein Passwort</h2>
+  <p class="stat">Das Passwort, das du in Vercel als ATLAS_SECRET eingetragen hast.</p>
+  <form id="loginform" method="post" action="#"><input type="text" name="username" value="Atlas" autocomplete="username" tabindex="-1" aria-hidden="true" style="position:absolute;opacity:0;height:0;width:0;padding:0;border:0"><input id="pw" name="password" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Passwort">
+  <div class="reihe"><button id="los" type="submit">Anmelden</button></div></form>
+  <p class="stat" id="loginfehl"></p>
+</div>
+
+<div id="google" class="karte" style="display:none"><h2>Google Kalender verbinden</h2><p class="stat neutral" id="gstat">Noch nicht verbunden</p><p class="hilfe">Tippe auf den Knopf, melde dich bei Google an und erlaube den Zugriff. Wenn Google warnt, die App sei nicht überprüft, tippe auf Erweitert und dann auf Weiter zu Atlas. Das ist deine eigene App.</p><div class="reihe"><button id="gjetzt">Mit Google verbinden</button><button class="zweit" id="gtest">Nur testen</button></div></div>
+<div class="karte"><h2>Animationen</h2><p class="hilfe">Zeigt bei Kalender, Listen, Schicht und mehr eine Film-Animation, wenn Atlas etwas tut.</p><label style="display:flex;gap:10px;align-items:center;font-size:16px"><input type="checkbox" id="animan" style="width:22px;height:22px"> Animationen an</label></div>
+<div class="karte" id="adr"><h2>Deine Adressen</h2><p class="hilfe">Für Fahrzeit und Abfahrt. Mit Straße, Hausnummer, Postleitzahl und Ort.</p><p class="stat neutral" id="adrstat"></p><label class="hilfe">Zu Hause</label><input type="text" id="adrheim" autocomplete="off"><label class="hilfe">Arbeit</label><input type="text" id="adrarbeit" autocomplete="off"><div class="reihe"><button id="adrsp" type="button">Adressen speichern</button></div>
+<h2 style="margin-top:18px">Weitere Orte</h2><p class="hilfe">Zum Beispiel Mutter oder Matzi. Dann reicht in Atlas der Name.</p><div id="ortliste"></div><p class="stat neutral" id="ortstat"></p><label class="hilfe">Name</label><input type="text" id="ortname" autocomplete="off"><label class="hilfe">Adresse</label><input type="text" id="ortadr" autocomplete="off"><div class="reihe"><button id="ortsp" type="button">Ort speichern</button></div></div>
+<div class="karte" id="wort"><h2>Wörter für die Spracherkennung</h2><p class="hilfe">Hinweise: Namen und Straßen, die Atlas beim Zuhören kennen soll (eins pro Zeile). Deine gespeicherten Orte und Straßen kommen automatisch dazu.</p><textarea id="wh" rows="4" style="width:100%"></textarea><p class="hilfe">Korrekturen: Was falsch verstanden wird, kommt links, das Richtige rechts (eine Zeile, zum Beispiel: Tal Arnold = Karl-Arnold).</p><textarea id="wk" rows="5" style="width:100%"></textarea><p class="stat neutral" id="wstat"></p><div class="reihe"><button id="wsp" type="button">Wörter speichern</button></div></div>
+<div id="liste"></div>
+
+<script>
+(function(){
+"use strict";
+var pw="";try{var ab=document.getElementById("animan");ab.checked=localStorage.getItem("atlas_anim")!=="0";ab.onchange=function(){localStorage.setItem("atlas_anim",ab.checked?"1":"0")}}catch(e){}
+var $=function(i){return document.getElementById(i)};
+function th(){var h={"Content-Type":"application/json"};try{var t=localStorage.getItem("atlas_t");if(t)h["x-atlas-s"]=t}catch(e){}return h}
+function api(body){body.passwort=pw;return fetch("/api/setup",{method:"POST",headers:th(),body:JSON.stringify(body)}).then(function(r){return r.json()})}
+function schritte(f,s){
+  var el=$("schritte");el.style.display="block";
+  if(s==="datenbank")el.innerHTML="<h2>Schritt 1: Datenbank verbinden</h2><p>In Vercel dein Projekt öffnen, oben auf <b>Storage</b> tippen, <b>Upstash for Redis</b> wählen, neu anlegen und mit dem Projekt verbinden. Danach im Projekt unter <b>Deployments</b> bei dem neuesten auf die drei Punkte und <b>Redeploy</b> tippen.</p>";
+  else if(s==="secret")el.innerHTML="<h2>Schritt 2: Passwort festlegen</h2><p>In Vercel: Projekt, <b>Settings</b>, <b>Environment Variables</b>. Name: <b>ATLAS_SECRET</b>, Wert: ein langes Passwort, das nur du kennst (mindestens 12 Zeichen). Speichern, dann unter Deployments <b>Redeploy</b>.</p>";
+  else el.innerHTML="<p class='fehl'>"+f+"</p>";
+}
+function anzeigen(liste){
+  $("login").style.display="none";$("schritte").style.display="none";
+  var h=$("liste");h.innerHTML="";
+  liste.forEach(function(k){
+    var d=document.createElement("div");d.className="karte";
+    d.innerHTML="<h2></h2><p class='stat'></p><input type='password' autocomplete='off' placeholder='Schlüssel hier einfügen'><div class='reihe'><button class='sp'>Speichern und testen</button><button class='zweit te'>Nur testen</button></div><p class='hilfe'></p>";
+    d.querySelector("h2").textContent=k.name;
+    var st=d.querySelector(".stat");
+    function zeige(g,l){st.className="stat "+(g?"ok":"neutral");st.textContent=g?"Gespeichert (endet auf "+l+")":"Noch nicht eingetragen"}
+    function ergebnis(t){st.className="stat "+(t.ok===true?"ok":t.ok===false?"fehl":"neutral");st.textContent=(t.ok===true?"✓ ":t.ok===false?"✗ ":"")+t.text}
+    zeige(k.gesetzt,k.letzte);
+    d.querySelector(".hilfe").textContent=k.hilfe;
+    var inp=d.querySelector("input");
+    d.querySelector(".sp").onclick=function(){
+      if(!inp.value.trim()){st.className="stat fehl";st.textContent="Erst den Schlüssel einfügen";return}
+      st.className="stat neutral";st.textContent="Speichere …";
+      api({aktion:"speichern",id:k.id,wert:inp.value}).then(function(r){inp.value="";if(!r.ok){st.className="stat fehl";st.textContent=r.fehler;return}ergebnis(r.test)});
+    };
+    d.querySelector(".te").onclick=function(){st.className="stat neutral";st.textContent="Teste …";api({aktion:"testen",id:k.id}).then(function(r){r.ok?ergebnis(r.test):(st.className="stat fehl",st.textContent=r.fehler)})};
+    h.appendChild(d);
+  });
+}
+function google(v){
+  $("google").style.display="block";var g=$("gstat");g.className="stat "+(v?"ok":"neutral");g.textContent=v?"✓ Verbunden":"Noch nicht verbunden";
+  $("gjetzt").textContent=v?"Neu verbinden":"Mit Google verbinden";
+  $("gjetzt").onclick=function(){g.className="stat neutral";g.textContent="Einen Moment …";api({aktion:"googlelink"}).then(function(r){if(r.ok){location.href=r.adresse}else{g.className="stat fehl";g.textContent=r.fehler}})};
+  $("gtest").onclick=function(){g.className="stat neutral";g.textContent="Teste …";api({aktion:"googletest"}).then(function(r){var t=r.test||{text:r.fehler};g.className="stat "+(t.ok?"ok":"fehl");g.textContent=(t.ok?"✓ ":"✗ ")+t.text})};
+}
+function adressen(){
+  var st=$("adrstat");
+  var os=$("ortstat");
+  function orte(l){var d=$("ortliste");d.innerHTML="";(l||[]).forEach(function(o){var z=document.createElement("div");z.className="reihe";z.style.alignItems="center";var t=document.createElement("span");t.style.flex="1";t.textContent=o.name+": "+o.adresse;var b=document.createElement("button");b.type="button";b.textContent="Löschen";b.onclick=function(){if(!confirm(o.name+" löschen?"))return;api({aktion:"ortLoeschen",name:o.name}).then(function(r){if(r.ok)laden2();else{os.className="stat fehl";os.textContent="✗ "+r.fehler}})};z.appendChild(t);z.appendChild(b);d.appendChild(z)})}
+  function laden2(){api({aktion:"adressen"}).then(function(r){if(r.ok){$("adrheim").value=r.heim;$("adrarbeit").value=r.arbeit;orte(r.orte)}})}
+  laden2();
+  $("ortsp").onclick=function(){var n=$("ortname").value.trim(),a=$("ortadr").value.trim();if(!n||!a){os.className="stat fehl";os.textContent="Name und Adresse eintragen";return}os.className="stat neutral";os.textContent="Prüfe und speichere …";api({aktion:"ortSetzen",name:n,adresse:a}).then(function(r){if(!r.ok){os.className="stat fehl";os.textContent="✗ "+r.fehler;return}os.className="stat ok";os.textContent="✓ Gespeichert. Gefunden: "+r.gefunden;$("ortname").value="";$("ortadr").value="";laden2()}).catch(function(){os.className="stat fehl";os.textContent="Keine Verbindung"})};
+  $("adrsp").onclick=function(){
+    st.className="stat neutral";st.textContent="Prüfe und speichere …";
+    var teile=[["heim",$("adrheim").value.trim()],["arbeit",$("adrarbeit").value.trim()]],i=0,fund=[];
+    (function weiter(){
+      if(i>=teile.length){st.className="stat ok";st.textContent="✓ Gespeichert. Gefunden: "+fund.join(" / ");return}
+      var t=teile[i++];
+      api({aktion:"adresseSetzen",ort:t[0],adresse:t[1]}).then(function(r){
+        if(!r.ok){st.className="stat fehl";st.textContent="✗ "+(t[0]==="heim"?"Zu Hause: ":"Arbeit: ")+r.fehler;return}
+        fund.push(r.gefunden);weiter();
+      }).catch(function(){st.className="stat fehl";st.textContent="Keine Verbindung"});
+    })();
+  };
+}
+function woerter(){
+  var st=$("wstat");
+  api({aktion:"woerter"}).then(function(r){if(r.ok){$("wh").value=r.hinweise;$("wk").value=r.korrekturen}});
+  $("wsp").onclick=function(){st.className="stat neutral";st.textContent="Speichere …";api({aktion:"woerterSpeichern",hinweise:$("wh").value,korrekturen:$("wk").value}).then(function(r){if(r.ok){st.className="stat ok";st.textContent="✓ Gespeichert ("+r.anzahl_hinweise+" Hinweise, "+r.anzahl_korrekturen+" Korrekturen)"}else{st.className="stat fehl";st.textContent="✗ "+r.fehler}}).catch(function(){st.className="stat fehl";st.textContent="Keine Verbindung"})};
+}
+function laden(){
+  api({aktion:"status"}).then(function(r){
+    if(r.ok){anzeigen(r.liste);google(r.google);adressen();woerter();return}
+    if(r.schritt){schritte(r.fehler,r.schritt);return}
+    if(pw){$("loginfehl").className="stat fehl";$("loginfehl").textContent=r.fehler||"Fehler"}
+  }).catch(function(){$("loginfehl").className="stat fehl";$("loginfehl").textContent="Keine Verbindung"});
+}
+$("loginform").onsubmit=function(e){e.preventDefault();pw=$("pw").value;
+  fetch("/api/anmelden",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pw:pw})}).then(function(r){return r.json()}).then(function(j){if(j.ok){try{if(j.token)localStorage.setItem("atlas_t",j.token)}catch(e){}pw="";laden()}else{$("loginfehl").className="stat fehl";$("loginfehl").textContent=j.fehler||"Fehler"}}).catch(function(){$("loginfehl").className="stat fehl";$("loginfehl").textContent="Keine Verbindung"})};
+laden();
+})();
+</script>
+</body>
+</html>

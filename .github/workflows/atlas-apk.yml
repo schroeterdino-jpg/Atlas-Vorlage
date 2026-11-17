@@ -1,0 +1,89 @@
+name: Atlas APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/atlas-apk.yml'
+      - 'android/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Projekt anlegen
+        run: |
+          mkdir -p atlasapp/app/src/main/java/de/beispiel/atlas atlasapp/app/src/main/res/drawable-nodpi
+          S=android
+          cp $S/*.java atlasapp/app/src/main/java/de/beispiel/atlas/
+          cp $S/AndroidManifest.xml atlasapp/app/src/main/AndroidManifest.xml
+          cp $S/ic_launcher.png atlasapp/app/src/main/res/drawable-nodpi/ic_launcher.png
+          cp $S/app-build.gradle atlasapp/app/build.gradle
+          cp $S/projekt-build.gradle atlasapp/build.gradle
+          cp $S/gradle.properties atlasapp/gradle.properties
+          if [ -z "${{ vars.ATLAS_URL }}" ]; then echo "FEHLT: Lege bei GitHub unter Settings, Secrets and variables, Actions, Variables eine Variable ATLAS_URL an (Adresse deiner Atlas-Seite bei Vercel, mit / am Ende). Siehe INSTALL.md."; exit 1; fi
+          # Adresse der eigenen Atlas-Seite und eigenes GitHub-Projekt (fuer die Update-Meldung) in die App einbauen
+          printf 'package de.beispiel.atlas;\nfinal class Konfig {\n    static final String URL = "%s";\n    static final String REPO = "%s";\n}\n' "${{ vars.ATLAS_URL }}" "${{ github.repository }}" > atlasapp/app/src/main/java/de/beispiel/atlas/Konfig.java
+          cp $S/settings.gradle atlasapp/settings.gradle
+
+      - name: Signatur-Schluessel (einmal erzeugen, dann im eigenen Projekt aufbewahren)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Die App muss bei jedem Bau mit demselben Schluessel signiert werden, sonst laesst sie sich nicht aktualisieren.
+          if [ ! -f signatur/atlas.jks ]; then
+            mkdir -p signatur
+            keytool -genkeypair -keystore signatur/atlas.jks -storepass atlasapk -keypass atlasapk -alias atlas -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Atlas"
+            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              git config user.name "Atlas Bau"; git config user.email "atlas@users.noreply.github.com"
+              git add signatur/atlas.jks && git commit -m "Signatur-Schluessel dieser Kopie angelegt" && git push || echo "Schluessel konnte nicht gespeichert werden"
+            fi
+          fi
+          cp signatur/atlas.jks atlasapp/app/atlas.jks
+
+      - name: Sprachmodell laden (Hey Atlas)
+        run: |
+          cd atlasapp
+          curl -fL -o model.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+          unzip -q model.zip
+          mkdir -p app/src/main/assets
+          mv vosk-model-small-en-us-0.15 app/src/main/assets/model
+          rm model.zip
+          du -sh app/src/main/assets/model
+
+      - name: APK bauen
+        run: |
+          cd atlasapp
+          gradle assembleDebug --no-daemon --console=plain > build.log 2>&1 || {
+            grep -E "error:|What went wrong" -A4 build.log | head -60
+            exit 1
+          }
+          cp app/build/outputs/apk/debug/app-debug.apk ../Atlas.apk
+
+      - name: APK als Download bereitstellen (nur auf main)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "atlas-${{ github.run_number }}" Atlas.apk --repo "${{ github.repository }}" --title "Atlas ${{ github.run_number }}" --notes "Debug-APK der Atlas-App"
+
+      - name: APK als Artefakt (Test auf Zweigen)
+        if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Atlas-APK
+          path: Atlas.apk

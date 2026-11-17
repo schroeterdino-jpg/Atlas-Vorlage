@@ -1,0 +1,4 @@
+{
+  "functions": { "api/*.js": { "maxDuration": 30 } },
+  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ]"
+}

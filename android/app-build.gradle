@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'de.beispiel.atlas'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'de.beispiel.atlas'
+        minSdk 26
+        targetSdk 34
+        versionCode Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+        versionName '1.0'
+    }
+
+    signingConfigs {
+        atlas {
+            storeFile file('atlas.jks')
+            storePassword 'atlasapk'
+            keyAlias 'atlas'
+            keyPassword 'atlasapk'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.atlas
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    androidResources {
+        noCompress 'mdl', 'fst', 'conf', 'int', 'txt', 'mat', 'stats', 'ie', 'dubm', 'raw'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.alphacephei:vosk-android:0.3.47'
+    implementation 'net.java.dev.jna:jna:5.13.0@aar'
+}
